@@ -1,0 +1,124 @@
+# Python相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+apiupdate/
+api_migration/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# 环境变量
+.env
+.env.local
+
+# 模型文件（太大，不上传到Git）
+models/**/*.bin
+models/**/*.safetensors
+models/**/*.pt
+models/**/*.pth
+models/**/*.ckpt
+model_cache/
+*.model
+*.onnx
+
+# 数据文件（大文件不上传）
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.txt
+data/processed/*.pkl
+data/processed/*.h5
+*.parquet
+
+# 日志文件
+logs/*.log
+*.log
+.log
+
+# 实验跟踪
+wandb/
+runs/
+mlruns/
+
+# 结果文件（选择性上传）
+results/**/*.png
+results/**/*.jpg
+results/**/*.pdf
+results/**/*.mp4
+
+# 临时文件
+*.tmp
+*.temp
+tmp/
+temp/
+.cache/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 编译文件
+*.pyc
+*.pyo
+*.pyd
+
+# 测试覆盖率
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# 文档构建
+docs/_build/
+site/
+
+# 备份文件
+*~
+*.bak
+*.swp
+*.swo
