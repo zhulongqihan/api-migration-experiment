@@ -43,7 +43,7 @@
 - [x] 环境配置（2x RTX 3090, Python 3.10.18）
 - [x] Git仓库初始化
 - [x] conda环境创建（apiupdate）
-- [ ] 项目结构搭建
+- [x] 项目结构搭建
 - [ ] 数据集准备
 - [ ] Baseline实现（方向3）
 
@@ -226,5 +226,5 @@ MIT License
 
 **实验进展和详细记录请查看 [实验记录文档](docs/实验记录.md)**
 
-*Last updated: 2025-11-02*
+*Last updated: 2025-11-024
 
