@@ -1,0 +1,44 @@
+{
+  "train": [
+    {
+      "id": 1,
+      "dependency": "pandas",
+      "old_version": "1.3.0",
+      "new_version": "2.0.0",
+      "old_code": "df = df.append({'A': 3}, ignore_index=True)",
+      "new_code": "df = pd.concat([df, pd.DataFrame({'A': [3]})], ignore_index=True)",
+      "description": "DataFrame.append已废弃，使用pd.concat替代",
+      "update_type": "function_replacement"
+    },
+    {
+      "id": 2,
+      "dependency": "numpy",
+      "old_version": "1.20.0",
+      "new_version": "1.24.0",
+      "old_code": "result = np.sum(arr, keepdims=True)",
+      "new_code": "result = np.sum(arr, keepdims=False)",
+      "description": "keepdims默认值改变",
+      "update_type": "parameter_change"
+    },
+    {
+      "id": 3,
+      "dependency": "requests",
+      "old_version": "2.25.0",
+      "new_version": "2.28.0",
+      "old_code": "response = requests.get(url)",
+      "new_code": "response = requests.get(url, timeout=30)",
+      "description": "建议添加timeout参数",
+      "update_type": "parameter_add"
+    }
+  ],
+  "test": [
+    {
+      "id": 1,
+      "dependency": "pandas",
+      "old_code": "new_df = old_df.append(row)",
+      "new_code": "new_df = pd.concat([old_df, row])",
+      "description": "使用concat代替append"
+    }
+  ]
+}
+
