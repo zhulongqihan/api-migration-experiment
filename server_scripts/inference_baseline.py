@@ -26,27 +26,54 @@ console = Console()
 class BaselineInference:
     """Baseline推理器：规则+Prompt方法"""
     
-    def __init__(self, model_name="Qwen/Qwen2.5-Coder-1.5B", device="cpu"):
+    def __init__(self, model_name="Qwen/Qwen2.5-Coder-1.5B", device="auto"):
         console.print(f"[cyan]初始化模型: {model_name}[/cyan]")
         
-        self.device = device
         self.model_name = model_name
         
-        # 加载模型
+        # 自动检测设备
+        if device == "auto":
+            if torch.cuda.is_available():
+                self.device = "cuda"
+                console.print(f"[green]✓ 检测到CUDA，使用GPU[/green]")
+            else:
+                self.device = "cpu"
+                console.print(f"[yellow]⚠ CUDA不可用，使用CPU[/yellow]")
+        else:
+            self.device = device
+        
+        # 加载tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             trust_remote_code=True
         )
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16,
-            trust_remote_code=True
-        )
         
-        if device == "cuda" and torch.cuda.is_available():
-            self.model = self.model.cuda()
-        
-        console.print(f"[green]✓ 模型加载成功 (设备: {self.model.device})[/green]")
+        # 加载模型（尝试GPU，失败则用CPU）
+        try:
+            if self.device == "cuda":
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16,
+                    trust_remote_code=True
+                ).cuda()
+                console.print(f"[green]✓ 模型加载成功 (GPU: {torch.cuda.get_device_name(0)})[/green]")
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float32,  # CPU用float32
+                    trust_remote_code=True
+                )
+                console.print(f"[green]✓ 模型加载成功 (CPU)[/green]")
+        except Exception as e:
+            console.print(f"[red]GPU加载失败: {e}[/red]")
+            console.print(f"[yellow]回退到CPU模式...[/yellow]")
+            self.device = "cpu"
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float32,
+                trust_remote_code=True
+            )
+            console.print(f"[green]✓ 模型加载成功 (CPU)[/green]")
     
     def generate_code(self, prompt, max_new_tokens=200, temperature=0.7):
         """生成代码"""
@@ -184,20 +211,33 @@ def main():
     
     # 2. 加载规则库
     console.print("\n[yellow]步骤2/4: 加载规则库[/yellow]")
-    rule_file = Path("../configs/rules.json")
-    if rule_file.exists():
+    # 尝试多个可能的路径
+    possible_paths = [
+        Path("configs/rules.json"),           # 从scripts运行
+        Path("../configs/rules.json"),        # 从子目录运行
+        Path("./configs/rules.json"),         # 当前目录
+    ]
+    
+    rules_data = {}
+    rule_file = None
+    for path in possible_paths:
+        if path.exists():
+            rule_file = path
+            break
+    
+    if rule_file:
         with open(rule_file, 'r', encoding='utf-8') as f:
             rules_data = json.load(f)
-        console.print(f"[green]✓ 规则库: {len(rules_data)} 个依赖[/green]")
+        console.print(f"[green]✓ 规则库: {len(rules_data)} 个依赖 ({rule_file})[/green]")
     else:
-        rules_data = {}
         console.print("[yellow]⚠ 规则库不存在，使用空规则[/yellow]")
+        console.print(f"[yellow]   尝试过的路径: {[str(p) for p in possible_paths]}[/yellow]")
     
     # 3. 初始化推理器
     console.print("\n[yellow]步骤3/4: 初始化模型[/yellow]")
     inferencer = BaselineInference(
         model_name="Qwen/Qwen2.5-Coder-1.5B",
-        device="cpu"  # 或 "cuda" 如果GPU可用
+        device="auto"  # 自动检测：GPU优先，失败则CPU
     )
     
     # 4. 运行推理
