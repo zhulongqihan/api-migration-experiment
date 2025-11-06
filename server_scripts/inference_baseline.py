@@ -75,8 +75,8 @@ class BaselineInference:
             )
             console.print(f"[green]✓ 模型加载成功 (CPU)[/green]")
     
-    def generate_code(self, prompt, max_new_tokens=200, temperature=0.7):
-        """生成代码"""
+    def generate_code(self, prompt, max_new_tokens=200, temperature=0.3):
+        """生成代码（优化参数：降低temperature以减少随机性）"""
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
         
         with torch.no_grad():
@@ -85,7 +85,7 @@ class BaselineInference:
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
                 do_sample=True,
-                top_p=0.95,
+                top_p=0.9,  # 也降低top_p以提高确定性
                 pad_token_id=self.tokenizer.eos_token_id
             )
         

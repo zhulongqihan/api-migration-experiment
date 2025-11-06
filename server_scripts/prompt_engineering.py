@@ -18,8 +18,9 @@ The following code uses deprecated APIs:
 
 Update requirement: {description}
 
-Generate the updated code:
-```python
+IMPORTANT: Generate ONLY the updated code (one line), no explanations, no markdown formatting.
+
+Updated code:
 """
     
     @staticmethod
@@ -27,17 +28,16 @@ Generate the updated code:
         """带上下文的Prompt"""
         return f"""### API Update Task
 
-**Library**: {dependency}
-**Version Migration**: {old_version} → {new_version}
-**Change**: {description}
+Library: {dependency}
+Version: {old_version} → {new_version}
+Change: {description}
 
-**Old Code**:
-```python
+Old Code:
 {old_code}
-```
 
-**Updated Code** (following best practices for {dependency} {new_version}):
-```python
+IMPORTANT: Output ONLY the updated code (single line), no explanations.
+
+Updated code:
 """
     
     @staticmethod
@@ -45,44 +45,41 @@ Generate the updated code:
         """带规则提示的Prompt"""
         rules_text = "\n".join([f"- {r.get('type', 'unknown')}: {r.get('pattern', {})} → {r.get('replacement', {})}" for r in rules])
         
-        return f"""### API Update with Known Rules
+        return f"""### API Update with Rules
 
-**Library**: {dependency}
-**Known Update Patterns**:
+Library: {dependency}
+Rules:
 {rules_text}
 
-**Old Code**:
-```python
+Old Code:
 {old_code}
-```
 
-**Description**: {description}
+Task: {description}
 
-**Apply the rules and generate updated code**:
-```python
+IMPORTANT: Apply the rules above and output ONLY the updated code (one line), no explanations.
+
+Updated code:
 """
     
     @staticmethod
     def cot_prompt(old_code: str, dependency: str, description: str) -> str:
         """Chain-of-Thought Prompt"""
-        return f"""### API Update with Step-by-Step Reasoning
+        return f"""### API Update - Think Step by Step
 
-**Library**: {dependency}
-**Update**: {description}
+Library: {dependency}
+Task: {description}
 
-**Old Code**:
-```python
+Old Code:
 {old_code}
-```
 
-**Think step by step**:
-1. What APIs in the old code are deprecated?
-2. What are the replacement APIs in the new version?
-3. What parameters need to change?
-4. Generate the updated code.
+Think step by step:
+1. Identify the deprecated API
+2. Find the replacement API
+3. Adjust parameters if needed
 
-**Updated Code**:
-```python
+IMPORTANT: After thinking, output ONLY the final updated code (one line).
+
+Updated code:
 """
 
 if __name__ == "__main__":
