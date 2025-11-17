@@ -139,10 +139,100 @@ python3 evaluate_baseline.py
 - 缺失关键API（1个）：with_rules在pandas样例上失败
 - 低相似度（3个）：cot生成了过多解释文本
 
-#### 3.2 方向1：LoRA微调（待开始📅）
-- [ ] 标准LoRA实现
-- [ ] 层次化LoRA实现（核心创新）
-- [ ] 消融实验（不同层范围）
+#### 3.2 方向1：LoRA微调（环境就绪，准备训练✅）
+
+**完成时间**：2025-11-17  
+**服务器路径**：`~/api_migration_exp/scripts/`
+
+**目标**：实现并对比标准LoRA和层次化LoRA两种方法
+
+**核心创新点**：
+- 🎯 **层次化LoRA**：只更新深层（22-31层），参数量减少~69%
+- 💡 **假设**：深层负责语义理解，更新深层足以适配API变化
+- ⚡ **优势**：参数少、训练快、减少灾难性遗忘
+
+**已完成的准备工作**：
+- [x] `lora_config.py` - LoRA配置文件（标准/层次化）✅
+- [x] `lora_trainer.py` - LoRA训练器 ✅
+- [x] `run_lora.py` - 主运行脚本 ✅
+- [x] `evaluate_lora.py` - 评估脚本 ✅
+- [x] `compare_methods.py` - 对比分析脚本 ✅
+- [x] `LORA_QUICKSTART.md` - 快速开始指南 ✅
+- [x] 环境依赖修复（bitsandbytes、pandas兼容性）✅
+- [x] 训练器初始化测试成功 ✅
+
+**环境验证结果**：
+```
+✓ 模型加载成功 (cuda)
+✓ LoRA配置完成
+  可训练参数: 9,232,384 (0.59%)
+  总参数: 1,552,946,688
+✓ 数据集准备完成: 3 个样例
+✓ 训练器初始化成功
+```
+
+**执行命令**：
+```bash
+cd ~/api_migration_exp/scripts
+
+# 1. 训练标准LoRA（baseline）
+python3 run_lora.py --method standard --epochs 3 --batch_size 2
+
+# 2. 训练层次化LoRA（创新方法）
+python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 3 --batch_size 2
+
+# 3. 评估标准LoRA
+python3 evaluate_lora.py --model_path ../models/checkpoints/standard_lora/final_model
+
+# 4. 评估层次化LoRA
+python3 evaluate_lora.py --model_path ../models/checkpoints/hierarchical_lora_layers_22-31/final_model
+
+# 5. 对比分析
+python3 compare_methods.py \
+    --baseline_result ../results/baseline/evaluation_baseline_results_20251117_092534.json \
+    --standard_lora_result ../models/checkpoints/standard_lora/evaluation/evaluation_results_*.json \
+    --hierarchical_lora_result ../models/checkpoints/hierarchical_lora_layers_22-31/evaluation/evaluation_results_*.json
+```
+
+**预计时间**：
+- 标准LoRA训练：2-3小时
+- 层次化LoRA训练：1-2小时（更快！）
+- 评估和分析：30分钟
+- **总计：4-6小时**
+
+**下一步操作**：
+
+1. **同步到GitHub**（5分钟）
+   ```bash
+   cd ~/api_migration_exp
+   git add scripts/lora_*.py scripts/run_lora.py scripts/evaluate_lora.py scripts/compare_methods.py scripts/LORA_QUICKSTART.md
+   git commit -m "Phase 3.2: LoRA微调完整实现"
+   git push origin main
+   ```
+
+2. **快速测试训练**（30分钟，推荐先做）
+   ```bash
+   cd ~/api_migration_exp/scripts
+   nohup python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 1 --batch_size 2 > lora_test.log 2>&1 &
+   tail -f lora_test.log
+   ```
+
+3. **完整训练**（4-6小时）
+   ```bash
+   # 层次化LoRA（1-2小时）
+   nohup python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 3 --batch_size 2 > lora_hierarchical.log 2>&1 &
+   
+   # 标准LoRA（2-3小时）
+   nohup python3 run_lora.py --method standard --epochs 3 --batch_size 2 > lora_standard.log 2>&1 &
+   ```
+
+**待完成任务**：
+- [ ] 快速测试训练（1 epoch）
+- [ ] 完整训练标准LoRA（3 epochs）
+- [ ] 完整训练层次化LoRA（3 epochs）
+- [ ] 评估两种方法
+- [ ] 对比分析结果
+- [ ] 撰写实验报告
 
 #### 3.3 方向2：知识编辑（待开始📅）
 - [ ] ROME/MEMIT实现
