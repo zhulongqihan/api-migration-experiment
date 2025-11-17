@@ -139,7 +139,7 @@ python3 evaluate_baseline.py
 - 缺失关键API（1个）：with_rules在pandas样例上失败
 - 低相似度（3个）：cot生成了过多解释文本
 
-#### 3.2 方向1：LoRA微调（环境就绪，准备训练✅）
+#### 3.2 方向1：LoRA微调（快速测试完成✅）
 
 **完成时间**：2025-11-17  
 **服务器路径**：`~/api_migration_exp/scripts/`
@@ -151,25 +151,43 @@ python3 evaluate_baseline.py
 - 💡 **假设**：深层负责语义理解，更新深层足以适配API变化
 - ⚡ **优势**：参数少、训练快、减少灾难性遗忘
 
-**已完成的准备工作**：
+**已完成工作**：
 - [x] `lora_config.py` - LoRA配置文件（标准/层次化）✅
 - [x] `lora_trainer.py` - LoRA训练器 ✅
 - [x] `run_lora.py` - 主运行脚本 ✅
 - [x] `evaluate_lora.py` - 评估脚本 ✅
 - [x] `compare_methods.py` - 对比分析脚本 ✅
 - [x] `LORA_QUICKSTART.md` - 快速开始指南 ✅
+- [x] `ENVIRONMENT_SETUP.md` - 环境配置记录 ✅
+- [x] `DATA_EXPANSION_GUIDE.md` - 数据扩展指南 ✅
+- [x] `prepare_codeupdatearena_data.py` - 数据转换脚本 ✅
 - [x] 环境依赖修复（bitsandbytes、pandas兼容性）✅
 - [x] 训练器初始化测试成功 ✅
+- [x] **快速测试训练完成（1 epoch）** ✅
 
-**环境验证结果**：
+**快速测试结果（mini数据集，2025-11-17）**：
 ```
-✓ 模型加载成功 (cuda)
-✓ LoRA配置完成
-  可训练参数: 9,232,384 (0.59%)
-  总参数: 1,552,946,688
-✓ 数据集准备完成: 3 个样例
-✓ 训练器初始化成功
+数据集: 3训练 + 10测试
+方法: 层次化LoRA (层22-31)
+可训练参数: 9,232,384 (0.59%)
+训练时间: 1.52秒
+训练损失: 1.959
+模型大小: 18MB
+状态: ✅ 训练成功，模型已保存
 ```
+
+**环境配置问题及解决**：
+1. ❌ **bitsandbytes兼容性问题**
+   - 错误: `ModuleNotFoundError: No module named 'triton.ops'`
+   - 解决: 设置 `DISABLE_BNB_IMPORT=1`，禁用量化功能
+
+2. ❌ **pandas/numpy版本冲突**
+   - 错误: `ValueError: numpy.dtype size changed`
+   - 解决: 重装 `pandas==2.3.3`, `pyarrow==20.0.0`, `datasets==4.0.0`
+
+3. ❌ **FP16混合精度训练错误**
+   - 错误: `ValueError: Attempting to unscale FP16 gradients`
+   - 解决: 修改 `lora_trainer.py`，设置 `fp16=False, bf16=False`
 
 **执行命令**：
 ```bash
@@ -200,39 +218,49 @@ python3 compare_methods.py \
 - 评估和分析：30分钟
 - **总计：4-6小时**
 
-**下一步操作**：
+**下一步计划（阶段性扩展策略）**：
 
-1. **同步到GitHub**（5分钟）
-   ```bash
-   cd ~/api_migration_exp
-   git add scripts/lora_*.py scripts/run_lora.py scripts/evaluate_lora.py scripts/compare_methods.py scripts/LORA_QUICKSTART.md
-   git commit -m "Phase 3.2: LoRA微调完整实现"
-   git push origin main
-   ```
+**阶段1：当前mini数据集（已完成）**
+- [x] 快速测试训练（1 epoch）✅
+- [ ] 评估快速测试模型
+- [ ] 同步代码到GitHub
 
-2. **快速测试训练**（30分钟，推荐先做）
-   ```bash
-   cd ~/api_migration_exp/scripts
-   nohup python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 1 --batch_size 2 > lora_test.log 2>&1 &
-   tail -f lora_test.log
-   ```
+**阶段2：小规模扩展（50样例，推荐下一步）**
+- [ ] 下载CodeUpdateArena数据集
+- [ ] 转换50训练+50测试样例
+- [ ] 训练层次化LoRA（3 epochs，2-3小时）
+- [ ] 训练标准LoRA（3 epochs，2-3小时）
+- [ ] 评估和对比分析
 
-3. **完整训练**（4-6小时）
-   ```bash
-   # 层次化LoRA（1-2小时）
-   nohup python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 3 --batch_size 2 > lora_hierarchical.log 2>&1 &
-   
-   # 标准LoRA（2-3小时）
-   nohup python3 run_lora.py --method standard --epochs 3 --batch_size 2 > lora_standard.log 2>&1 &
-   ```
-
-**待完成任务**：
-- [ ] 快速测试训练（1 epoch）
-- [ ] 完整训练标准LoRA（3 epochs）
-- [ ] 完整训练层次化LoRA（3 epochs）
-- [ ] 评估两种方法
-- [ ] 对比分析结果
+**阶段3：论文级别实验（200样例）**
+- [ ] 准备200训练+100测试样例
+- [ ] 完整训练实验（8-12小时）
+- [ ] 详细评估和消融实验
 - [ ] 撰写实验报告
+
+**阶段4：SOTA实验（500+样例，可选）**
+- [ ] 混合多数据集
+- [ ] 大规模训练
+- [ ] 冲击顶会性能
+
+**立即可执行的命令**：
+```bash
+# 1. 评估快速测试模型
+cd ~/api_migration_exp/scripts
+python3 evaluate_lora.py \
+    --model_path ../models/checkpoints/hierarchical_lora_layers_22-31/final_model \
+    --data_file ../mini_dataset.json
+
+# 2. 下载CodeUpdateArena（为下一步准备）
+cd ~/api_migration_exp
+git clone https://github.com/amazon-science/CodeUpdateArena.git
+
+# 3. 同步到GitHub
+cd ~/api_migration_exp
+git add .
+git commit -m "Phase 3.2: LoRA微调快速测试完成 + 环境配置文档"
+git push origin main
+```
 
 #### 3.3 方向2：知识编辑（待开始📅）
 - [ ] ROME/MEMIT实现

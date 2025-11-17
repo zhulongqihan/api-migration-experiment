@@ -203,7 +203,8 @@ class LoRATrainer:
             logging_steps=self.config.logging_steps,
             save_steps=self.config.save_steps,
             save_total_limit=self.config.save_total_limit,
-            fp16=self.config.device == "cuda",
+            fp16=False,  # 禁用FP16以避免梯度unscale错误
+            bf16=False,  # 也禁用BF16
             report_to="none",  # 不使用wandb等
             remove_unused_columns=False,
         )

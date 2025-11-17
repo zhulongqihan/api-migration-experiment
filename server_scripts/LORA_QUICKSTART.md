@@ -197,12 +197,79 @@ cat ../models/checkpoints/standard_lora/training_info.json
 
 ## 📞 需要帮助？
 
-如果遇到问题：
-1. 检查错误日志
-2. 确认环境配置正确
-3. 查看README.md中的详细说明
-4. 联系项目维护者
+## 🐛 常见问题及解决方案（2025-11-17更新）
+
+### 问题1：bitsandbytes兼容性错误
+**错误信息**：
+```
+ModuleNotFoundError: No module named 'triton.ops'
+```
+
+**解决方案**：
+已在所有脚本中添加 `os.environ['DISABLE_BNB_IMPORT'] = '1'`，无需手动操作。
+
+---
+
+### 问题2：pandas/numpy版本冲突
+**错误信息**：
+```
+ValueError: numpy.dtype size changed, may indicate binary incompatibility
+```
+
+**解决方案**：
+```bash
+pip uninstall pandas pyarrow datasets -y
+pip install --only-binary=:all: pyarrow pandas datasets
+```
+
+**推荐版本**：
+- pandas==2.3.3
+- numpy==2.2.6
+- pyarrow==20.0.0
+- datasets==4.0.0
+
+---
+
+### 问题3：FP16混合精度训练错误
+**错误信息**：
+```
+ValueError: Attempting to unscale FP16 gradients
+```
+
+**解决方案**：
+已在 `lora_trainer.py` 中禁用FP16/BF16，无需手动操作。
+
+---
+
+### 问题4：训练卡住不动
+**可能原因**：
+- 使用了换行的nohup命令
+- 进程在后台运行但未正确启动
+
+**解决方案**：
+```bash
+# 使用一行命令
+nohup python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 1 --batch_size 2 > lora_test.log 2>&1 &
+
+# 检查进程
+ps aux | grep run_lora
+
+# 查看日志
+tail -f lora_test.log
+```
+
+---
+
+## 📞 获取帮助
+
+如果遇到其他问题：
+1. 查看 `ENVIRONMENT_SETUP.md` - 详细的环境配置记录
+2. 查看 `PROGRESS_2025-11-17.md` - 今日问题解决记录
+3. 检查错误日志并搜索相关错误信息
+4. 查看README.md中的详细说明
 
 ---
 
 **祝实验顺利！** 🚀
+
+*最后更新: 2025-11-17*
