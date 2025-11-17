@@ -244,10 +244,13 @@ def main():
         "评估不同Prompt策略的效果"
     ))
     
-    # 查找最新的结果文件
-    results_dir = Path("results/baseline")
+    # 查找最新的结果文件（使用项目根目录）
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    results_dir = project_root / "results" / "baseline"
+    
     if not results_dir.exists():
-        console.print("[red]错误：results/baseline目录不存在[/red]")
+        console.print(f"[red]错误：{results_dir}目录不存在[/red]")
         return
     
     result_files = sorted(results_dir.glob("baseline_results_*.json"))

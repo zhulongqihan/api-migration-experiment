@@ -160,9 +160,12 @@ class BaselineInference:
         
         return results
     
-    def save_results(self, results, output_dir="results/baseline"):
+    def save_results(self, results, output_dir="../results/baseline"):
         """保存结果"""
-        output_path = Path(output_dir)
+        # 确保使用项目根目录的results文件夹
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+        output_path = project_root / "results" / "baseline"
         output_path.mkdir(parents=True, exist_ok=True)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

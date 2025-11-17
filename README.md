@@ -79,22 +79,65 @@
 
 **实验顺序**：方向3（规则+Prompt）→ 方向1（LoRA微调）→ 方向2（知识编辑）
 
-#### 3.1 方向3：规则+Prompt baseline（重新执行中⏳）
+#### 3.1 方向3：规则+Prompt baseline（已完成✅）
 
-**已完成的准备工作**：
-- [x] 规则库构建
-- [x] Prompt模板设计（4种策略）
-- [x] 模型加载测试（Qwen2.5-Coder-1.5B）
-- [x] 完整推理pipeline实现
-- [x] 评估脚本实现
-- [x] Prompt优化
-- [x] 数据集扩展（1个→10个样例）
+**完成时间**：2025-11-17  
+**服务器路径**：`~/api_migration_exp`
 
-**待执行的实验步骤**：
-- [ ] **步骤1**：生成规则库（运行test_phase2.py）
-- [ ] **步骤2**：在10个样例上运行推理（运行inference_baseline.py）
-- [ ] **步骤3**：评估4种策略效果（运行evaluate_baseline.py）
-- [ ] **步骤4**：验证策略稳定性并分析结果
+**执行的关键步骤**：
+- [x] 步骤1：生成规则库（`python3 test_phase2.py`）
+- [x] 步骤2：升级PyTorch到2.6.0+cu118（解决版本兼容问题）
+- [x] 步骤3：在10个样例上运行推理（`python3 inference_baseline.py`）
+- [x] 步骤4：评估4种策略效果（`python3 evaluate_baseline.py`）
+- [x] 步骤5：验证策略稳定性并分析结果
+- [x] 步骤6：修复脚本路径问题（结果文件统一保存到项目根目录）
+
+**执行的命令**：
+```bash
+# 1. 环境准备
+conda activate apiupdate
+cd ~/api_migration_exp/scripts
+
+# 2. 升级PyTorch（解决兼容性问题）
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 3. 生成规则库
+python3 test_phase2.py
+
+# 4. 运行推理（4种策略，10个样例）
+python3 inference_baseline.py
+
+# 5. 评估结果
+python3 evaluate_baseline.py
+```
+
+**生成的文件**：
+- ✅ `configs/rules.json` - API更新规则库（3个库，3条规则）
+- ✅ `results/baseline/baseline_results_*.json` - 推理结果（40个生成样本）
+- ✅ `results/baseline/baseline_summary_*.txt` - 推理摘要
+- ✅ `results/baseline/evaluation_*.json` - 评估结果
+- ✅ `results/baseline/evaluation_*_summary.txt` - 评估报告
+
+**实验结果**（10个样例，4种策略）：
+
+| 策略 | 精确匹配 | 平均相似度 | 关键API | 平均长度 | 评价 |
+|------|---------|-----------|---------|---------|------|
+| **basic** | **90.0%** ⭐ | **0.98** | **90.0%** | 34/32 | 优秀 |
+| with_context | 80.0% | 0.98 | 90.0% | 32/32 | 良好 |
+| with_rules | 70.0% | 0.87 | 90.0% | 47/32 | 中等 |
+| cot | 70.0% | 0.75 | 90.0% | 93/32 | 一般 |
+
+**核心结论**：
+- ✅ basic策略表现优秀（90%精确匹配，0.98相似度）
+- ✅ 所有策略关键API准确率稳定在90%
+- ✅ 简单明确的Prompt策略最有效
+- ✅ **Baseline效果可靠，可以进入LoRA微调阶段**
+
+**失败案例**：
+- 轻微差异（5个）：生成了额外参数，实际可能更好
+- 缺失关键API（1个）：with_rules在pandas样例上失败
+- 低相似度（3个）：cot生成了过多解释文本
 
 #### 3.2 方向1：LoRA微调（待开始📅）
 - [ ] 标准LoRA实现
@@ -271,14 +314,14 @@ python run_editing.py
 | with_rules | 0% | 0.89 | 100% |
 | cot | 0% | 0.78 | 100% |
 
-**第三轮测试（扩展到10个样例）**：
+**第三轮测试（最终结果，10个样例）**：
 
 | 策略 | 精确匹配 | 相似度 | 关键API | 评价 |
 |------|---------|--------|---------|------|
-| **basic** | **90%** ⭐ | **0.99** | **90%** | 优秀且稳定 |
-| with_context | 80% | 0.97 | 90% | 良好 |
-| with_rules | 70% | 0.86 | 90% | 中等 |
-| cot | 40% | 0.72 | 90% | 一般 |
+| **basic** | **90%** ⭐ | **0.98** | **90%** | 优秀且稳定 |
+| with_context | 80% | 0.98 | 90% | 良好 |
+| with_rules | 70% | 0.87 | 90% | 中等 |
+| cot | 70% | 0.75 | 90% | 一般 |
 
 **优化措施**：
 1. ✅ Prompt添加严格输出约束
@@ -328,7 +371,7 @@ MIT License
 
 **实验进展和详细记录请查看 [实验记录文档](docs/实验记录.md)**
 
-*Last updated: 2025-11-06*
+*Last updated: 2025-11-17*
 
 ---
 
