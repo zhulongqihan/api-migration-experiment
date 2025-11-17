@@ -38,6 +38,69 @@
       "old_code": "new_df = old_df.append(row)",
       "new_code": "new_df = pd.concat([old_df, row])",
       "description": "使用concat代替append"
+    },
+    {
+      "id": 2,
+      "dependency": "numpy",
+      "old_code": "matrix = np.matrix([[1, 2], [3, 4]])",
+      "new_code": "matrix = np.array([[1, 2], [3, 4]])",
+      "description": "np.matrix已废弃，使用np.array"
+    },
+    {
+      "id": 3,
+      "dependency": "tensorflow",
+      "old_code": "flat = tf.contrib.layers.flatten(x)",
+      "new_code": "flat = tf.keras.layers.Flatten()(x)",
+      "description": "tf.contrib已移除，使用tf.keras"
+    },
+    {
+      "id": 4,
+      "dependency": "sklearn",
+      "old_code": "X_scaled = scaler.fit_transform(X_train)",
+      "new_code": "X_scaled = scaler.fit(X_train).transform(X_train)",
+      "description": "分离fit和transform操作"
+    },
+    {
+      "id": 5,
+      "dependency": "torch",
+      "old_code": "torch.save(model, 'model.pth')",
+      "new_code": "torch.save(model.state_dict(), 'model.pth')",
+      "description": "保存state_dict而非整个模型"
+    },
+    {
+      "id": 6,
+      "dependency": "PIL",
+      "old_code": "img.resize((100, 100), Image.ANTIALIAS)",
+      "new_code": "img.resize((100, 100), Image.LANCZOS)",
+      "description": "ANTIALIAS已重命名为LANCZOS"
+    },
+    {
+      "id": 7,
+      "dependency": "requests",
+      "old_code": "r = requests.post(url, data=payload)",
+      "new_code": "r = requests.post(url, json=payload)",
+      "description": "使用json参数代替data"
+    },
+    {
+      "id": 8,
+      "dependency": "matplotlib",
+      "old_code": "plt.subplot(111)",
+      "new_code": "plt.subplot(1, 1, 1)",
+      "description": "使用三参数格式代替整数"
+    },
+    {
+      "id": 9,
+      "dependency": "pandas",
+      "old_code": "df.ix[0, 'col']",
+      "new_code": "df.loc[0, 'col']",
+      "description": "ix已废弃，使用loc或iloc"
+    },
+    {
+      "id": 10,
+      "dependency": "numpy",
+      "old_code": "arr.tostring()",
+      "new_code": "arr.tobytes()",
+      "description": "tostring已废弃，使用tobytes"
     }
   ]
 }
