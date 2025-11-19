@@ -139,9 +139,9 @@ python3 evaluate_baseline.py
 - 缺失关键API（1个）：with_rules在pandas样例上失败
 - 低相似度（3个）：cot生成了过多解释文本
 
-#### 3.2 方向1：LoRA微调（快速测试完成✅）
+#### 3.2 方向1：LoRA微调（50样例实验进行中🔄）
 
-**完成时间**：2025-11-17  
+**最新更新**：2025-11-19  
 **服务器路径**：`~/api_migration_exp/scripts/`
 
 **目标**：实现并对比标准LoRA和层次化LoRA两种方法
@@ -155,39 +155,82 @@ python3 evaluate_baseline.py
 - [x] `lora_config.py` - LoRA配置文件（标准/层次化）✅
 - [x] `lora_trainer.py` - LoRA训练器 ✅
 - [x] `run_lora.py` - 主运行脚本 ✅
-- [x] `evaluate_lora.py` - 评估脚本 ✅
+- [x] `evaluate_lora.py` - 评估脚本（修复CUDA错误和数据路径）✅
 - [x] `compare_methods.py` - 对比分析脚本 ✅
 - [x] `LORA_QUICKSTART.md` - 快速开始指南 ✅
 - [x] `ENVIRONMENT_SETUP.md` - 环境配置记录 ✅
 - [x] `DATA_EXPANSION_GUIDE.md` - 数据扩展指南 ✅
-- [x] `prepare_codeupdatearena_data.py` - 数据转换脚本 ✅
+- [x] `create_real_migration_dataset.py` - 真实API迁移数据集生成器 ✅
 - [x] 环境依赖修复（bitsandbytes、pandas兼容性）✅
 - [x] 训练器初始化测试成功 ✅
-- [x] **快速测试训练完成（1 epoch）** ✅
+- [x] **快速测试训练完成（mini数据集）** ✅
+- [x] **50样例数据集准备完成** ✅
+- [x] **评估脚本修复（greedy解码、自动路径查找）** ✅
+- [ ] **50样例训练进行中（v2优化参数）** 🔄
 
-**快速测试结果（mini数据集，2025-11-17）**：
+**实验记录**：
+
+**1. Mini数据集快速测试（2025-11-17）**：
 ```
 数据集: 3训练 + 10测试
 方法: 层次化LoRA (层22-31)
 可训练参数: 9,232,384 (0.59%)
 训练时间: 1.52秒
 训练损失: 1.959
-模型大小: 18MB
-状态: ✅ 训练成功，模型已保存
+评估结果: 精确匹配率 0% (数据量太少)
+状态: ✅ 流程验证成功
 ```
 
-**环境配置问题及解决**：
-1. ❌ **bitsandbytes兼容性问题**
+**2. 50样例数据集实验（2025-11-19）**：
+```
+数据集: 50训练 + 50测试（26个真实API迁移案例）
+库分布: pandas(15), tensorflow(9), numpy(9), sklearn(6), torch(5), matplotlib(4)
+
+第一次训练（v1，参数不当）:
+- Epochs: 3, Batch: 4, LR: 2e-5
+- 训练时间: 14秒
+- 训练损失: 69.61 (未收敛)
+- 梯度: NaN (不稳定)
+- 评估结果: 精确匹配率 0%
+- 问题: 训练步数太少(12步)，损失未收敛
+
+第二次训练（v2，优化参数，进行中🔄）:
+- Epochs: 10, Batch: 2, LR: 5e-5
+- 预期训练步数: 250步
+- 预期训练时间: 5-10分钟
+- 状态: 训练中...
+```
+
+**问题解决记录**：
+
+**环境配置问题（2025-11-17）**：
+1. ✅ **bitsandbytes兼容性问题**
    - 错误: `ModuleNotFoundError: No module named 'triton.ops'`
    - 解决: 设置 `DISABLE_BNB_IMPORT=1`，禁用量化功能
 
-2. ❌ **pandas/numpy版本冲突**
+2. ✅ **pandas/numpy版本冲突**
    - 错误: `ValueError: numpy.dtype size changed`
    - 解决: 重装 `pandas==2.3.3`, `pyarrow==20.0.0`, `datasets==4.0.0`
 
-3. ❌ **FP16混合精度训练错误**
+3. ✅ **FP16混合精度训练错误**
    - 错误: `ValueError: Attempting to unscale FP16 gradients`
    - 解决: 修改 `lora_trainer.py`，设置 `fp16=False, bf16=False`
+
+**评估脚本问题（2025-11-19）**：
+4. ✅ **CUDA device-side assert错误**
+   - 错误: `RuntimeError: CUDA error: device-side assert triggered`
+   - 原因: 采样生成时概率张量包含无效值
+   - 解决: 改用greedy解码 (`do_sample=False, num_beams=1`)
+
+5. ✅ **数据文件路径问题**
+   - 错误: `FileNotFoundError: mini_dataset.json`
+   - 解决: 添加自动路径查找逻辑
+
+**训练问题（2025-11-19）**：
+6. ✅ **训练未收敛问题**
+   - 现象: 损失69.61，梯度NaN，生成全是感叹号
+   - 原因: 训练步数太少(12步)，学习率偏低
+   - 解决: 增加epochs(3→10)，减小batch_size(4→2)，提高学习率(2e-5→5e-5)
 
 **执行命令**：
 ```bash
@@ -220,17 +263,20 @@ python3 compare_methods.py \
 
 **下一步计划（阶段性扩展策略）**：
 
-**阶段1：当前mini数据集（已完成）**
+**阶段1：Mini数据集验证（已完成✅）**
 - [x] 快速测试训练（1 epoch）✅
-- [ ] 评估快速测试模型
-- [ ] 同步代码到GitHub
+- [x] 评估快速测试模型 ✅
+- [x] 修复评估脚本问题 ✅
+- [ ] 同步代码到GitHub 🔄
 
-**阶段2：小规模扩展（50样例，推荐下一步）**
-- [ ] 下载CodeUpdateArena数据集
-- [ ] 转换50训练+50测试样例
-- [ ] 训练层次化LoRA（3 epochs，2-3小时）
-- [ ] 训练标准LoRA（3 epochs，2-3小时）
-- [ ] 评估和对比分析
+**阶段2：50样例实验（进行中🔄）**
+- [x] 创建真实API迁移数据集（26个案例）✅
+- [x] 生成50训练+50测试样例 ✅
+- [x] 第一次训练（参数不当，失败）✅
+- [ ] 第二次训练（优化参数，进行中）🔄
+- [ ] 评估v2模型
+- [ ] 训练标准LoRA用于对比
+- [ ] 对比分析和结果总结
 
 **阶段3：论文级别实验（200样例）**
 - [ ] 准备200训练+100测试样例
@@ -489,7 +535,7 @@ MIT License
 
 **实验进展和详细记录请查看 [实验记录文档](docs/实验记录.md)**
 
-*Last updated: 2025-11-17*
+*Last updated: 2025-11-19*
 
 ---
 

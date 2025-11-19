@@ -93,14 +93,13 @@ class LoRAEvaluator:
         inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_length)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         
-        # 生成
+        # 生成（使用greedy解码避免采样问题）
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=128,
-                temperature=0.3,
-                do_sample=True,
-                top_p=0.95,
+                do_sample=False,  # 使用greedy解码
+                num_beams=1,      # 不使用beam search
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
             )
@@ -276,8 +275,8 @@ def main():
     parser.add_argument(
         "--data_file",
         type=str,
-        default="mini_dataset.json",
-        help="测试数据文件"
+        default=None,
+        help="测试数据文件（默认自动查找mini_dataset.json）"
     )
     parser.add_argument(
         "--output_dir",
@@ -287,6 +286,26 @@ def main():
     )
     
     args = parser.parse_args()
+    
+    # 自动查找数据文件
+    if args.data_file is None:
+        import os
+        import glob
+        # 在当前目录和父目录查找
+        possible_paths = [
+            "mini_dataset.json",
+            "../mini_dataset.json",
+            os.path.expanduser("~/api_migration_exp/scripts/mini_dataset.json"),
+            os.path.expanduser("~/api_migration_exp/mini_dataset.json"),
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                args.data_file = path
+                console.print(f"[green]✓ 找到数据文件: {path}[/green]")
+                break
+        if args.data_file is None:
+            console.print("[red]❌ 找不到mini_dataset.json，请使用--data_file指定路径[/red]")
+            return
     
     # 创建评估器
     evaluator = LoRAEvaluator(args.model_path, args.base_model)
