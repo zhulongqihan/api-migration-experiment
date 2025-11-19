@@ -20,7 +20,7 @@ from transformers import (
     AutoModelForCausalLM,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling
+    DataCollatorForSeq2Seq
 )
 from peft import (
     get_peft_model,
@@ -159,14 +159,30 @@ class LoRATrainer:
         # 转换为Dataset
         dataset = Dataset.from_list(examples)
         
-        # Tokenize
+        # Tokenize（正确设置labels，只对target部分计算loss）
         def tokenize_function(examples):
-            return self.tokenizer(
-                examples["text"],
-                truncation=True,
-                max_length=self.config.max_length,
-                padding="max_length"
-            )
+            model_inputs = {"input_ids": [], "attention_mask": [], "labels": []}
+            
+            for i in range(len(examples["text"])):
+                # 分别tokenize input和完整文本
+                input_text = examples["input"][i]
+                full_text = examples["text"][i]
+                
+                # Tokenize
+                input_ids = self.tokenizer(input_text, add_special_tokens=True)["input_ids"]
+                full_ids = self.tokenizer(full_text, add_special_tokens=True, truncation=True, max_length=self.config.max_length)["input_ids"]
+                
+                # 创建labels：input部分设为-100（忽略），target部分保留
+                labels = [-100] * len(input_ids) + full_ids[len(input_ids):]
+                
+                # 确保长度一致
+                labels = labels[:len(full_ids)]
+                
+                model_inputs["input_ids"].append(full_ids)
+                model_inputs["attention_mask"].append([1] * len(full_ids))
+                model_inputs["labels"].append(labels)
+            
+            return model_inputs
         
         tokenized_dataset = dataset.map(
             tokenize_function,
@@ -205,14 +221,19 @@ class LoRATrainer:
             save_total_limit=self.config.save_total_limit,
             fp16=False,  # 禁用FP16以避免梯度unscale错误
             bf16=False,  # 也禁用BF16
+            max_grad_norm=0.3,  # 启用梯度裁剪，防止梯度爆炸
+            warmup_ratio=0.1,  # 使用warmup比例而非固定步数
+            lr_scheduler_type="cosine",  # 使用余弦学习率衰减
             report_to="none",  # 不使用wandb等
             remove_unused_columns=False,
         )
         
-        # 数据整理器
-        data_collator = DataCollatorForLanguageModeling(
+        # 数据整理器（使用动态padding）
+        data_collator = DataCollatorForSeq2Seq(
             tokenizer=self.tokenizer,
-            mlm=False
+            model=self.peft_model,
+            padding=True,
+            label_pad_token_id=-100
         )
         
         # 创建Trainer
