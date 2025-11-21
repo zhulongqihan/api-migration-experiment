@@ -12,6 +12,34 @@
     },
     {
       "id": 2,
+      "dependency": "pandas",
+      "old_code": "new_df = old_df.append(row)",
+      "new_code": "new_df = pd.concat([old_df, row])",
+      "description": "使用concat代替append"
+    },
+    {
+      "id": 3,
+      "dependency": "pandas",
+      "old_code": "df.ix[0, 'col']",
+      "new_code": "df.loc[0, 'col']",
+      "description": "ix已废弃，使用loc或iloc"
+    },
+    {
+      "id": 4,
+      "dependency": "pandas",
+      "old_code": "result = df.append(new_row, ignore_index=False)",
+      "new_code": "result = pd.concat([df, new_row], ignore_index=False)",
+      "description": "append替换为concat"
+    },
+    {
+      "id": 5,
+      "dependency": "pandas",
+      "old_code": "df2 = df1.append(df3)",
+      "new_code": "df2 = pd.concat([df1, df3])",
+      "description": "DataFrame合并使用concat"
+    },
+    {
+      "id": 6,
       "dependency": "numpy",
       "old_version": "1.20.0",
       "new_version": "1.24.0",
@@ -21,7 +49,35 @@
       "update_type": "parameter_change"
     },
     {
-      "id": 3,
+      "id": 7,
+      "dependency": "numpy",
+      "old_code": "matrix = np.matrix([[1, 2], [3, 4]])",
+      "new_code": "matrix = np.array([[1, 2], [3, 4]])",
+      "description": "np.matrix已废弃，使用np.array"
+    },
+    {
+      "id": 8,
+      "dependency": "numpy",
+      "old_code": "arr.tostring()",
+      "new_code": "arr.tobytes()",
+      "description": "tostring已废弃，使用tobytes"
+    },
+    {
+      "id": 9,
+      "dependency": "numpy",
+      "old_code": "val = np.product(arr)",
+      "new_code": "val = np.prod(arr)",
+      "description": "product已废弃，使用prod"
+    },
+    {
+      "id": 10,
+      "dependency": "numpy",
+      "old_code": "idx = np.rank(arr)",
+      "new_code": "idx = np.ndim(arr)",
+      "description": "rank已废弃，使用ndim"
+    },
+    {
+      "id": 11,
       "dependency": "requests",
       "old_version": "2.25.0",
       "new_version": "2.28.0",
@@ -29,6 +85,139 @@
       "new_code": "response = requests.get(url, timeout=30)",
       "description": "建议添加timeout参数",
       "update_type": "parameter_add"
+    },
+    {
+      "id": 12,
+      "dependency": "requests",
+      "old_code": "r = requests.post(url, data=payload)",
+      "new_code": "r = requests.post(url, json=payload)",
+      "description": "使用json参数代替data"
+    },
+    {
+      "id": 13,
+      "dependency": "tensorflow",
+      "old_code": "flat = tf.contrib.layers.flatten(x)",
+      "new_code": "flat = tf.keras.layers.Flatten()(x)",
+      "description": "tf.contrib已移除，使用tf.keras"
+    },
+    {
+      "id": 14,
+      "dependency": "tensorflow",
+      "old_code": "loss = tf.losses.mean_squared_error(y_true, y_pred)",
+      "new_code": "loss = tf.keras.losses.mean_squared_error(y_true, y_pred)",
+      "description": "使用tf.keras.losses"
+    },
+    {
+      "id": 15,
+      "dependency": "tensorflow",
+      "old_code": "opt = tf.train.AdamOptimizer()",
+      "new_code": "opt = tf.keras.optimizers.Adam()",
+      "description": "优化器迁移到tf.keras"
+    },
+    {
+      "id": 16,
+      "dependency": "sklearn",
+      "old_code": "X_scaled = scaler.fit_transform(X_train)",
+      "new_code": "X_scaled = scaler.fit(X_train).transform(X_train)",
+      "description": "分离fit和transform操作"
+    },
+    {
+      "id": 17,
+      "dependency": "sklearn",
+      "old_code": "model.fit(X, y, sample_weight=w)",
+      "new_code": "model.fit(X, y, sample_weight=w)",
+      "description": "保持sample_weight参数"
+    },
+    {
+      "id": 18,
+      "dependency": "torch",
+      "old_code": "torch.save(model, 'model.pth')",
+      "new_code": "torch.save(model.state_dict(), 'model.pth')",
+      "description": "保存state_dict而非整个模型"
+    },
+    {
+      "id": 19,
+      "dependency": "torch",
+      "old_code": "loss.backward(retain_graph=True)",
+      "new_code": "loss.backward()",
+      "description": "一般不需要retain_graph"
+    },
+    {
+      "id": 20,
+      "dependency": "torch",
+      "old_code": "x = x.cuda()",
+      "new_code": "x = x.to('cuda')",
+      "description": "使用to方法更通用"
+    },
+    {
+      "id": 21,
+      "dependency": "PIL",
+      "old_code": "img.resize((100, 100), Image.ANTIALIAS)",
+      "new_code": "img.resize((100, 100), Image.LANCZOS)",
+      "description": "ANTIALIAS已重命名为LANCZOS"
+    },
+    {
+      "id": 22,
+      "dependency": "PIL",
+      "old_code": "img.save('out.jpg', quality=95)",
+      "new_code": "img.save('out.jpg', quality=85)",
+      "description": "调整默认quality"
+    },
+    {
+      "id": 23,
+      "dependency": "matplotlib",
+      "old_code": "plt.subplot(111)",
+      "new_code": "plt.subplot(1, 1, 1)",
+      "description": "使用三参数格式代替整数"
+    },
+    {
+      "id": 24,
+      "dependency": "matplotlib",
+      "old_code": "plt.hold(True)",
+      "new_code": "pass",
+      "description": "hold已移除，默认行为"
+    },
+    {
+      "id": 25,
+      "dependency": "scipy",
+      "old_code": "from scipy.misc import imread",
+      "new_code": "from imageio import imread",
+      "description": "scipy.misc.imread已移除"
+    },
+    {
+      "id": 26,
+      "dependency": "scipy",
+      "old_code": "result = scipy.stats.chisqprob(chi2, df)",
+      "new_code": "result = scipy.stats.chi2.sf(chi2, df)",
+      "description": "chisqprob已废弃"
+    },
+    {
+      "id": 27,
+      "dependency": "django",
+      "old_code": "url(r'^path/', view)",
+      "new_code": "path('path/', view)",
+      "description": "使用path代替url"
+    },
+    {
+      "id": 28,
+      "dependency": "flask",
+      "old_code": "from flask.ext.login import login_required",
+      "new_code": "from flask_login import login_required",
+      "description": "flask.ext已废弃"
+    },
+    {
+      "id": 29,
+      "dependency": "sqlalchemy",
+      "old_code": "session.flush()",
+      "new_code": "session.commit()",
+      "description": "明确使用commit"
+    },
+    {
+      "id": 30,
+      "dependency": "pytest",
+      "old_code": "import pytest_runner",
+      "new_code": "import pytest",
+      "description": "直接使用pytest"
     }
   ],
   "test": [

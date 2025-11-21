@@ -1,0 +1,106 @@
+[
+  {
+    "type": "api_replacement",
+    "dependency": "pandas",
+    "pattern": "(\\w+)\\.append\\((.+?)\\)",
+    "replacement": "pd.concat([\\1, \\2])",
+    "description": "DataFrame.append已废弃，使用pd.concat",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "pandas",
+    "pattern": "\\.ix\\[",
+    "replacement": ".loc[",
+    "description": "ix已废弃，使用loc",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "numpy",
+    "pattern": "np\\.matrix\\(",
+    "replacement": "np.array(",
+    "description": "np.matrix已废弃",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "numpy",
+    "pattern": "\\.tostring\\(\\)",
+    "replacement": ".tobytes()",
+    "description": "tostring已废弃",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "tensorflow",
+    "pattern": "tf\\.contrib\\.layers\\.flatten\\((.+?)\\)",
+    "replacement": "tf.keras.layers.Flatten()(\\1)",
+    "description": "tf.contrib已移除",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "tensorflow",
+    "pattern": "tf\\.losses\\.",
+    "replacement": "tf.keras.losses.",
+    "description": "使用tf.keras.losses",
+    "confidence": 0.90
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "tensorflow",
+    "pattern": "tf\\.train\\.(\\w+)Optimizer",
+    "replacement": "tf.keras.optimizers.\\1",
+    "description": "优化器迁移到tf.keras",
+    "confidence": 0.90
+  },
+  {
+    "type": "method_chain",
+    "dependency": "sklearn",
+    "pattern": "(\\w+)\\.fit_transform\\((.+?)\\)",
+    "replacement": "\\1.fit(\\2).transform(\\2)",
+    "description": "分离fit和transform",
+    "confidence": 0.85
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "torch",
+    "pattern": "torch\\.save\\((\\w+),",
+    "replacement": "torch.save(\\1.state_dict(),",
+    "description": "保存state_dict",
+    "confidence": 0.90
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "torch",
+    "pattern": "\\.cuda\\(\\)",
+    "replacement": ".to('cuda')",
+    "description": "使用to方法",
+    "confidence": 0.85
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "PIL",
+    "pattern": "Image\\.ANTIALIAS",
+    "replacement": "Image.LANCZOS",
+    "description": "ANTIALIAS重命名",
+    "confidence": 0.95
+  },
+  {
+    "type": "parameter_replace",
+    "dependency": "requests",
+    "pattern": "(requests\\.(?:get|post)\\([^,]+),\\s*data=",
+    "replacement": "\\1, json=",
+    "description": "data参数改为json",
+    "confidence": 0.95
+  },
+  {
+    "type": "api_replacement",
+    "dependency": "matplotlib",
+    "pattern": "plt\\.subplot\\((\\d)(\\d)(\\d)\\)",
+    "replacement": "plt.subplot(\\1, \\2, \\3)",
+    "description": "使用三参数格式",
+    "confidence": 0.90
+  }
+]
