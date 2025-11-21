@@ -139,10 +139,11 @@ python3 evaluate_baseline.py
 - 缺失关键API（1个）：with_rules在pandas样例上失败
 - 低相似度（3个）：cot生成了过多解释文本
 
-#### 3.2 方向1：LoRA微调（50样例实验进行中🔄）
+#### 3.2 方向1：LoRA微调（暂时搁置⏸️，后续回归）
 
-**最新更新**：2025-11-19  
+**最新更新**：2025-11-21  
 **服务器路径**：`~/api_migration_exp/scripts/`
+**状态**：⏸️ **暂时搁置**（遇到深层兼容性问题，转向知识编辑方案）
 
 **目标**：实现并对比标准LoRA和层次化LoRA两种方法
 
@@ -274,7 +275,16 @@ python3 evaluate_baseline.py
      * ✅ 数据格式正确（labels设置正确）
      * ❌ PEFT库与Qwen2.5-Coder存在兼容性问题
      * ❌ 所有配置（层次化/标准、不同LR/batch）都失败
-   - 下一步: 调研PEFT/Transformers版本，或尝试其他模型（CodeLlama）
+   - v5尝试: 降级Transformers(4.57.1→4.44.0) → 结果：问题依旧
+   - SFT尝试: 使用TRL的SFTTrainer → 结果：损失0.0，梯度NaN（与原生Trainer完全相同）
+   - **最终决定**: 暂时搁置LoRA方向，转向知识编辑方案
+
+**搁置原因**（2025-11-21）：
+- 尝试了7种不同方案（v1-v5, standard, SFT）全部失败
+- 问题本质：PEFT库与Qwen2.5-Coder存在深层兼容性问题
+- 数值崩溃模式完全一致（损失→0.0，梯度→NaN）
+- 已投入大量时间调试，收益递减
+- **决策**：转向知识编辑方向，LoRA留待后续有新方案时回归
 
 **执行命令**：
 ```bash
@@ -355,10 +365,225 @@ git commit -m "Phase 3.2: LoRA微调快速测试完成 + 环境配置文档"
 git push origin main
 ```
 
-#### 3.3 方向2：知识编辑（待开始📅）
-- [ ] ROME/MEMIT实现
-- [ ] 代码领域适配
-- [ ] 编辑效果评估
+#### 3.3 方向2：神经知识编辑（遇到技术障碍⚠️）
+
+**最新更新**：2025-11-21  
+**服务器路径**：`~/api_migration_exp/scripts/`
+**状态**：⚠️ **遇到技术障碍**（多次尝试失败，转向DPO方向）
+
+**目标**：使用ROME/MEMIT直接编辑模型权重，无需训练
+
+**核心创新点**：
+- 🎯 **首次应用于代码API更新**：将知识编辑技术应用于代码生成领域
+- 💡 **直接修改权重**：不需要梯度下降训练，避免数值稳定性问题
+- ⚡ **快速更新**：编辑过程只需几秒，比LoRA训练快数百倍
+- 🎨 **局部性强**：只修改API相关知识，不影响其他代码生成能力
+
+**已完成工作**（2025-11-21）：
+- [x] `run_rome_editing.py` - 简化版ROME实现 ✅
+- [x] `run_knowledge_editing.py` - 完整EasyEdit版本 ✅
+- [x] `run_easyedit_rome.py` - EasyEdit适配脚本 ✅
+- [x] `run_rome_direct.py` - 直接ROME实现 ✅
+- [x] ROME编辑测试运行 ❌ **失败**
+- [ ] 编辑效果评估 📅
+- [ ] 与Baseline和LoRA对比 📅
+
+**实验记录**（2025-11-21）：
+
+**尝试1：简化版ROME**：
+```
+命令: python3 run_rome_editing.py --num_edits 10
+结果: ❌ 失败
+错误: 张量维度不匹配 (8960 vs 1536)
+原因: 简化实现的权重更新计算错误
+```
+
+**尝试2：EasyEdit ROME**：
+```
+命令: pip install easyeditor && python3 run_knowledge_editing.py
+结果: ❌ 失败
+错误: 依赖冲突无法解决
+问题:
+  - 缺少fairscale依赖
+  - huggingface_hub版本冲突（需要<1.0但环境中是1.1.5）
+  - cached_download API已废弃
+  - split_torch_state_dict_into_shards不存在
+尝试: 安装fairscale、降级huggingface_hub到多个版本
+结果: 环境彻底损坏，certifi元数据丢失
+```
+
+**尝试3：直接ROME实现**：
+```
+命令: python3 run_rome_direct.py --num_edits 10
+结果: ❌ 失败
+问题:
+  - 初始错误: Qwen2Tokenizer不存在（transformers版本太旧）
+  - 升级transformers后: huggingface_hub版本冲突
+  - 修复依赖后: numpy版本冲突导致datasets无法导入
+  - 最终修复所有依赖后运行: 所有10个API编辑全部失败（0/10成功）
+  - 错误: 张量维度不匹配 (8960 vs 1536) at non-singleton dimension 1
+运行时间: 42秒
+原因: 权重矩阵维度计算错误，协方差矩阵更新公式实现有误
+```
+
+**依赖问题汇总**（2025-11-21）：
+```
+环境状态: 严重损坏
+主要问题:
+  1. huggingface_hub: 多次安装卸载导致metadata丢失
+  2. transformers: 版本要求<1.0但安装了1.1.5
+  3. numpy: 版本冲突（scipy要求<1.23，安装了1.24.3）
+  4. certifi: RECORD文件丢失
+  5. easyeditor: 与现有环境完全不兼容
+
+修复尝试:
+  - pip install fairscale ✓
+  - pip install huggingface_hub==0.16.4 ❌
+  - pip install huggingface_hub==0.19.4 ❌
+  - pip install huggingface_hub==0.25.0 ❌
+  - pip install --upgrade huggingface_hub ❌
+  - rm -rf huggingface_hub* && 重装 ✓ (部分成功)
+  - pip install numpy==1.24.3 ✓ (但与scipy冲突)
+  - pip install transformers==4.37.0 ✓
+  
+最终环境状态:
+  torch: 2.0.1+cu117 ✓
+  transformers: 4.37.0 ✓
+  tokenizers: 0.15.2 ✓
+  huggingface_hub: 0.25.0 ✓
+  numpy: 1.24.3 ⚠️ (与scipy 1.7.3冲突)
+  accelerate: 1.11.0 ✓
+  peft: ERROR (依赖huggingface_hub)
+  datasets: ERROR (numpy版本冲突)
+```
+
+**失败原因分析**：
+1. **ROME算法复杂度**：需要精确的因果追踪和协方差矩阵计算
+2. **维度匹配问题**：Qwen2.5-Coder的MLP层结构与标准实现不匹配
+3. **依赖地狱**：EasyEdit与现有环境完全不兼容，强行安装导致环境损坏
+4. **简化实现局限**：直接实现ROME算法难度极高，容易出错
+
+**结论**（2025-11-21）：
+- ❌ **ROME方向暂时放弃**：技术难度过高，依赖问题无法解决
+- 📋 **已完成的方法**：Baseline (90%准确率) ✅
+- ⏸️ **搁置的方法**：LoRA (7次失败), ROME (3次失败)
+- 🎯 **下一步**：转向DPO（Direct Preference Optimization）或使用Baseline结果
+
+**方法说明**：
+
+**ROME (Rank-One Model Editing)**：
+- 原理：在特定Transformer层进行秩1权重更新
+- 步骤：
+  1. 定位知识存储层（通常是深层，如第20-25层）
+  2. 计算旧API和新API的表示差异
+  3. 对MLP层进行低秩更新
+  4. 保存编辑后的模型
+- 优势：
+  - 无需训练，直接修改权重
+  - 编辑精确，影响范围可控
+  - 快速（秒级完成）
+
+**实验计划**：
+
+**阶段1：初步验证（当前）**：
+- [ ] 在10个API上测试ROME编辑
+- [ ] 评估编辑成功率和代码生成质量
+- [ ] 验证局部性（不影响其他API）
+
+**阶段2：完整实验**：
+- [ ] 在50个API上进行编辑
+- [ ] 对比ROME vs Baseline
+- [ ] 分析失败案例
+
+**阶段3：论文撰写**：
+- [ ] 整理实验数据
+- [ ] 撰写方法和结果章节
+
+**执行命令**（已失败）：
+```bash
+cd ~/api_migration_exp/scripts
+
+# 尝试1: 简化版ROME
+python3 run_rome_editing.py --num_edits 10 --strength 0.5
+# 结果: 维度不匹配错误
+
+# 尝试2: EasyEdit ROME
+pip install easyeditor
+python3 run_easyedit_rome.py --num_edits 10
+# 结果: 依赖冲突
+
+# 尝试3: 直接ROME实现
+python3 run_rome_direct.py --num_edits 10
+# 结果: 0/10成功，维度不匹配
+```
+
+**实际时间**：
+- 依赖修复：2小时
+- ROME尝试：3次，全部失败
+- **总投入：3-4小时** ❌
+
+**经验教训**：
+1. 知识编辑算法实现难度远超预期
+2. 维度匹配需要深入理解模型结构
+3. EasyEdit库与Qwen模型不兼容
+4. 环境依赖管理需要更谨慎
+
+#### 3.4 方向1b：DPO偏好优化（待开始📅）
+
+**最新更新**：2025-11-21  
+**服务器路径**：`~/api_migration_exp/scripts/`
+**状态**：📅 **待开始**（LoRA和ROME失败后的备选方案）
+
+**目标**：使用Direct Preference Optimization (DPO)训练模型学习新API
+
+**核心创新点**：
+- 🎯 **偏好学习**：通过偏好对（旧API vs 新API）训练模型
+- 💡 **无需奖励模型**：比PPO更简单稳定
+- ⚡ **训练稳定**：不依赖值函数近似
+- 🎨 **适合代码任务**：直接优化生成质量
+
+**方法说明**：
+
+**DPO (Direct Preference Optimization)**：
+- 原理：通过偏好对直接优化策略
+- 数据格式：(prompt, chosen, rejected)
+  - prompt: 旧代码
+  - chosen: 新API代码（正确）
+  - rejected: 旧API代码（不推荐）
+- 优势：
+  - 无需单独的奖励模型
+  - 训练过程更稳定
+  - 内存占用更少
+  - 适合小数据集
+
+**计划任务**：
+- [ ] 创建DPO训练脚本
+- [ ] 构造偏好数据集
+- [ ] 训练DPO模型
+- [ ] 评估DPO效果
+- [ ] 与Baseline对比
+
+**预计时间**：
+- 脚本准备：30分钟
+- 数据准备：20分钟
+- 训练：1-2小时
+- 评估：30分钟
+- **总计：2-3小时**
+
+**决策点**（2025-11-21）：
+```
+当前状态:
+  ✅ Baseline: 90%准确率（已完成）
+  ❌ LoRA: 7次失败（搁置）
+  ❌ ROME: 3次失败（搁置）
+  📅 DPO: 待尝试
+
+选择:
+  选项1: 尝试DPO（最后一个神经网络方法）
+  选项2: 直接用Baseline结果写论文
+  
+建议: 先尝试DPO，如果1-2小时内无进展，则使用Baseline结果
+```
 
 ### ⏳ 阶段4：对比分析和消融实验（待开始）
 - [ ] 三个方向统一评估
@@ -582,7 +807,7 @@ MIT License
 
 **实验进展和详细记录请查看 [实验记录文档](docs/实验记录.md)**
 
-*Last updated: 2025-11-19*
+*Last updated: 2025-11-21 17:00*
 
 ---
 
