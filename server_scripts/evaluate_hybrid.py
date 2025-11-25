@@ -183,6 +183,25 @@ class HybridEvaluator:
         
         console.print(strategy_table)
         
+        # 成功案例展示
+        console.print("\n[bold green]成功案例展示：[/bold green]")
+        successes = []
+        for i, result in enumerate(self.results):
+            if self._exact_match(result['generated_code'], result['expected_code']):
+                successes.append((i, result))
+        
+        if successes:
+            console.print(f"成功案例数: {len(successes)}\n")
+            for idx, (i, result) in enumerate(successes[:5], 1):  # 显示前5个成功案例
+                console.print(f"[green]✓ 成功案例 {idx}:[/green]")
+                console.print(f"  旧代码: {result['old_code']}")
+                console.print(f"  生成: {result['generated_code']}")
+                console.print(f"  期望: {result['expected_code']}")
+                console.print(f"  策略: {result['strategy']}")
+                console.print(f"  置信度: {result.get('confidence', 'N/A')}\n")
+        else:
+            console.print("[red]无成功案例[/red]\n")
+        
         # 详细失败案例
         console.print("\n[bold yellow]失败案例分析：[/bold yellow]")
         failures = []

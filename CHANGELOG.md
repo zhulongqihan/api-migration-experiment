@@ -1,5 +1,69 @@
 # 更新日志
 
+## [2025-11-25] - 混合系统数值稳定性修复
+
+### 🐛 修复的问题
+- **LLM生成数值崩溃**：修复`RuntimeError: probability tensor contains either inf, nan or element < 0`
+  - 根本原因：Qwen2.5-Coder + transformers 4.44 + 采样模式(temperature>0)导致数值溢出
+  - 解决方案：采样模式全部改用greedy解码(temperature=0.0, do_sample=False)
+  - 避免使用`repetition_penalty`和`no_repeat_ngram_size`
+
+### ⚡ 性能优化
+- **策略阈值调整**：
+  - 规则直接应用阈值：0.85 → 0.5（覆盖更多样本）
+  - 规则引导阈值：0.6 → 0.3
+  - 增加安全检查：确保生成代码与原代码不同
+- **预期提升**：
+  - 规则直接应用覆盖：21次 → 35-40次
+  - 整体精确匹配率：23.5% → 35-45%
+
+### ✨ 新增功能
+- **成功案例展示**：在评估输出中显示前5个成功案例
+  - 展示旧代码、生成代码、期望代码
+  - 显示使用的策略和置信度
+- **调试模式**：HybridGenerator支持debug参数
+
+### 📝 修改文件
+- `server_scripts/hybrid_generator.py`：
+  - 修改`_llm_generate`默认temperature=0.0
+  - 移除greedy分支的repetition_penalty
+  - 提高采样分支最低温度到0.7
+  - 降低策略阈值
+  - 添加debug支持
+- `server_scripts/evaluate_hybrid.py`：
+  - 新增成功案例展示部分
+  - 显示前5个成功案例详情
+
+### 📊 当前性能
+- 测试集：51个样本
+- 精确匹配率：23.5%
+- 平均相似度：0.806
+- 策略分布：
+  - 规则直接应用：21次（57.1%准确率）
+  - 规则引导Prompt：29次（0.0%准确率，greedy复制问题）
+  - LLM兜底：1次（0.0%准确率）
+
+### 🎯 下一步优化
+- 验证阈值调整后的效果
+- 解决采样模式数值问题（升级transformers或换模型）
+- 扩大数据集规模
+
+---
+
+## [2025-11-24] - Baseline失败排查
+
+### 🐛 发现的问题
+- **Baseline准确率归零**：之前90%的准确率降为0%
+- **生成异常输出**：生成重复特殊字符(如`!!"!#!$...`)
+- **数值稳定性问题**：与混合系统类似的`RuntimeError`
+
+### 🔍 尝试的解决方案
+- 调整generation参数：temperature从0.7到0.0，移除repetition_penalty
+- 环境对比：怀疑是transformers版本或环境变化导致
+- **结论**：暂时搁置baseline问题，专注混合系统优化
+
+---
+
 ## [2025-11-05] - 阶段2完成
 
 ### ✅ 已完成

@@ -24,16 +24,20 @@ class HybridGenerator:
         self,
         rule_matcher: RuleMatcher,
         model_name: str = "Qwen/Qwen2.5-Coder-1.5B",
-        device: str = "auto"
+        device: str = "auto",
+        debug: bool = False
     ):
         """
         Args:
             rule_matcher: 规则匹配器
             model_name: LLM模型名称
             device: 设备（auto/cpu/cuda）
+            debug: 调试模式
         """
         self.matcher = rule_matcher
         self.model_name = model_name
+        self.device = device
+        self.debug = debug
         
         # 统计信息
         self.stats = {
@@ -113,20 +117,20 @@ class HybridGenerator:
         if matched_rules:
             best_rule, best_score = matched_rules[0]
             
-            # 策略A: 高置信度 → 规则直接应用
-            if best_score >= 0.85:
+            # 策略A: 规则直接应用（大幅降低阈值，覆盖更多样本）
+            if best_score >= 0.5:
                 new_code = self.matcher.apply_rules(old_code, [(best_rule, best_score)])
-                if new_code:
+                if new_code and new_code != old_code:
                     self.stats['rule_direct'] += 1
                     return new_code, 'rule_direct', best_score
             
-            # 策略B: 中置信度 → 规则引导Prompt
-            if best_score >= 0.6:
+            # 策略B: 低置信度规则 → 尝试greedy生成（但预期效果不好）
+            if best_score >= 0.3:
                 new_code = self._generate_with_rule_guidance(
                     old_code, best_rule, description
                 )
                 self.stats['rule_guided'] += 1
-                return new_code, 'rule_guided', best_score * 0.9
+                return new_code, 'rule_guided', best_score * 0.8
         
         # 策略C: 无规则或低置信度 → LLM兜底
         new_code = self._generate_with_llm(old_code, description, dependency)
@@ -147,30 +151,49 @@ class HybridGenerator:
                 # 规则能直接应用，直接返回
                 return direct_result
         except Exception as e:
-            console.print(f"[dim]规则应用失败: {e}[/dim]")
+            pass  # 静默失败，继续LLM生成
         
         # 规则无法直接应用，使用简化的LLM生成
         if rule['type'] == 'api_replacement':
             old_api = rule['old_api']
             new_api = rule['new_api']
             
-            # 简化prompt，直接替换
-            prompt = f"""{old_code}
-Replace {old_api} with {new_api}:"""
+            # 更明确的prompt
+            prompt = f"""Replace deprecated API in the following code.
+Old API: {old_api}
+New API: {new_api}
+Code: {old_code}
+Updated code:"""
         
         elif rule['type'] == 'parameter_migration':
-            # 参数迁移直接返回原代码（太复杂）
-            return old_code
+            # 参数迁移也尝试LLM
+            removed = rule.get('removed_params', [])
+            added = rule.get('added_params', [])
+            if removed:
+                prompt = f"""Update the function call by removing deprecated parameters.
+Remove: {', '.join(removed)}
+Code: {old_code}
+Updated code:"""
+            else:
+                return old_code
         
         else:
-            # 其他类型直接返回原代码
-            return old_code
+            # 其他类型也尝试简单的LLM
+            prompt = f"""Modernize this deprecated code.
+Code: {old_code}
+Updated code:"""
         
-        # 生成新代码
-        generated = self._llm_generate(prompt, max_new_tokens=50)
+        # 生成新代码（使用greedy，采样模式会崩溃）
+        generated = self._llm_generate(prompt, max_new_tokens=80, temperature=0.0)
         
-        # 如果生成失败，返回原代码
-        if not generated or generated.strip() == "":
+        # 调试：打印生成结果
+        if self.debug:
+            print(f"[DEBUG] Prompt: {prompt[:100]}...")
+            print(f"[DEBUG] Generated: {generated}")
+            print(f"[DEBUG] Old code: {old_code}")
+        
+        # 如果生成失败或与原代码相同，返回原代码
+        if not generated or generated.strip() == "" or generated == old_code:
             return old_code
         
         return generated
@@ -192,7 +215,7 @@ Replace {old_api} with {new_api}:"""
         
         return self._llm_generate(prompt)
     
-    def _llm_generate(self, prompt: str, max_new_tokens: int = 80) -> str:
+    def _llm_generate(self, prompt: str, max_new_tokens: int = 80, temperature: float = 0.0) -> str:
         """LLM生成（底层调用）"""
         # 不截断prompt（规则引导的prompt已经很短）
         inputs = self.tokenizer(
@@ -204,17 +227,27 @@ Replace {old_api} with {new_api}:"""
         ).to(self.device)
         
         with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=True,  # 使用采样
-                temperature=0.3,  # 低温度，更确定性
-                top_p=0.9,
-                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                repetition_penalty=1.2,  # 适度防重复
-                no_repeat_ngram_size=3
-            )
+            # 根据温度决定采样策略
+            if temperature <= 0.0:
+                # 使用纯greedy解码（最稳定）
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id
+                )
+            else:
+                # 使用采样（确保温度足够高避免数值问题）
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=True,
+                    temperature=max(temperature, 0.7),  # 最低0.7，更稳定
+                    top_p=0.95,
+                    pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id
+                )
         
         generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         
@@ -224,7 +257,7 @@ Replace {old_api} with {new_api}:"""
         else:
             generated_code = generated_text.strip()
         
-        # 清理输出
+        # 清理输出（移除markdown和注释）
         lines = generated_code.split('\n')
         code_lines = []
         
@@ -235,34 +268,28 @@ Replace {old_api} with {new_api}:"""
             if not line:
                 continue
             
+            # 跳过markdown代码块标记
+            if line.startswith('```'):
+                continue
+            
             # 跳过注释
             if line.startswith('#'):
                 continue
             
             # 跳过明显的解释文本
-            if line.startswith('Updated') or line.startswith('Task') or line.startswith('Replace'):
+            if line.lower().startswith(('updated', 'task', 'result', 'change', 'note', 'code:')):
                 continue
             
-            # 检测极端重复（如!!!!!!）
-            if len(line) > 15:
-                unique_chars = len(set(line))
-                total_chars = len(line)
-                diversity = unique_chars / total_chars
-                
-                # 只过滤极低多样性（<20%），放宽到允许正常代码通过
-                if diversity < 0.2:
-                    console.print(f"[dim]跳过极低多样性: {line[:40]}...[/dim]")
-                    continue
-                
+            # 检测极端异常（特殊字符重复）
+            if len(line) > 20:
                 # 检测过多特殊字符
-                if line.count('!') > 5 or line.count('?') > 5:
+                if line.count('!') > 10 or line.count('?') > 10:
                     continue
             
-            # 接受第一个合理的代码行
+            # 收集所有合理的代码行
             code_lines.append(line)
-            break
         
-        # 返回生成的代码，如果没有则返回空字符串
+        # 返回第一个非空行（通常是最重要的）
         return code_lines[0] if code_lines else ""
     
     def batch_generate(
