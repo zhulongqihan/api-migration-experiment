@@ -1,18 +1,18 @@
 # LoRA微调快速开始指南
 
-## 📋 目录结构
+## 目录结构
 
 ```
 server_scripts/
-├── lora_config.py          # LoRA配置（标准/层次化）
-├── lora_trainer.py         # 训练器实现
-├── run_lora.py            # 主运行脚本
-├── evaluate_lora.py       # 评估脚本
-├── compare_methods.py     # 对比分析脚本
-└── mini_dataset.json      # 训练数据
+├── lora_config.py # LoRA配置（标准/层次化）
+├── lora_trainer.py # 训练器实现
+├── run_lora.py # 主运行脚本
+├── evaluate_lora.py # 评估脚本
+├── compare_methods.py # 对比分析脚本
+└── mini_dataset.json # 训练数据
 ```
 
-## 🚀 快速开始
+## 快速开始
 
 ### 1. 环境检查
 
@@ -72,11 +72,11 @@ python3 run_lora.py --method hierarchical --target_layers 22-31 --epochs 1 --bat
 ```bash
 # 评估标准LoRA
 python3 evaluate_lora.py \
-    --model_path ../models/checkpoints/standard_lora/final_model
+ --model_path ../models/checkpoints/standard_lora/final_model
 
 # 评估层次化LoRA
 python3 evaluate_lora.py \
-    --model_path ../models/checkpoints/hierarchical_lora_layers_22-31/final_model
+ --model_path ../models/checkpoints/hierarchical_lora_layers_22-31/final_model
 ```
 
 **输出**：
@@ -88,9 +88,9 @@ python3 evaluate_lora.py \
 ```bash
 # 方法1：手动指定文件
 python3 compare_methods.py \
-    --baseline_result ../results/baseline/evaluation_baseline_results_20251117_092534.json \
-    --standard_lora_result ../models/checkpoints/standard_lora/evaluation/evaluation_results_*.json \
-    --hierarchical_lora_result ../models/checkpoints/hierarchical_lora_layers_22-31/evaluation/evaluation_results_*.json
+ --baseline_result ../results/baseline/evaluation_baseline_results_20251117_092534.json \
+ --standard_lora_result ../models/checkpoints/standard_lora/evaluation/evaluation_results_*.json \
+ --hierarchical_lora_result ../models/checkpoints/hierarchical_lora_layers_22-31/evaluation/evaluation_results_*.json
 
 # 方法2：使用默认路径（如果文件在标准位置）
 python3 compare_methods.py
@@ -102,7 +102,7 @@ python3 compare_methods.py
 
 ---
 
-## 📊 预期结果
+## 预期结果
 
 ### 标准LoRA
 - **参数量**：更新所有32层
@@ -116,13 +116,13 @@ python3 compare_methods.py
 
 ### 核心假设验证
 如果层次化LoRA性能接近标准LoRA，则证明：
-1. ✅ 深层负责语义理解，更新深层足以适配API
-2. ✅ 可以大幅减少参数量而不损失性能
-3. ✅ 减少灾难性遗忘的风险
+1. 深层负责语义理解，更新深层足以适配API
+2. 可以大幅减少参数量而不损失性能
+3. 减少灾难性遗忘的风险
 
 ---
 
-## 🔧 常见问题
+## 常见问题
 
 ### Q1: CUDA内存不足
 ```bash
@@ -162,7 +162,7 @@ python3 run_lora.py --method hierarchical --target_layers 16-23
 
 ---
 
-## 📈 监控训练
+## 监控训练
 
 ### 查看训练日志
 ```bash
@@ -184,7 +184,7 @@ cat ../models/checkpoints/standard_lora/training_info.json
 
 ---
 
-## 🎯 下一步
+## 下一步
 
 训练和评估完成后：
 
@@ -195,9 +195,9 @@ cat ../models/checkpoints/standard_lora/training_info.json
 
 ---
 
-## 📞 需要帮助？
+## 需要帮助？
 
-## 🐛 常见问题及解决方案（2025-11-17更新）
+## 常见问题及解决方案（2025-11-17更新）
 
 ### 问题1：bitsandbytes兼容性错误
 **错误信息**：
@@ -260,7 +260,7 @@ tail -f lora_test.log
 
 ---
 
-## 📞 获取帮助
+## 获取帮助
 
 如果遇到其他问题：
 1. 查看 `ENVIRONMENT_SETUP.md` - 详细的环境配置记录
@@ -270,6 +270,6 @@ tail -f lora_test.log
 
 ---
 
-**祝实验顺利！** 🚀
+**祝实验顺利！** 
 
 *最后更新: 2025-11-17*

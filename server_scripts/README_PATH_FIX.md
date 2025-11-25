@@ -13,20 +13,20 @@
 **修改前**：
 ```python
 def save_results(self, results, output_dir="results/baseline"):
-    """保存结果"""
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+ """保存结果"""
+ output_path = Path(output_dir)
+ output_path.mkdir(parents=True, exist_ok=True)
 ```
 
 **修改后**：
 ```python
 def save_results(self, results, output_dir="../results/baseline"):
-    """保存结果"""
-    # 确保使用项目根目录的results文件夹
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent
-    output_path = project_root / "results" / "baseline"
-    output_path.mkdir(parents=True, exist_ok=True)
+ """保存结果"""
+ # 确保使用项目根目录的results文件夹
+ script_dir = Path(__file__).parent
+ project_root = script_dir.parent
+ output_path = project_root / "results" / "baseline"
+ output_path.mkdir(parents=True, exist_ok=True)
 ```
 
 ### 2. `evaluate_baseline.py`
@@ -38,7 +38,7 @@ def save_results(self, results, output_dir="../results/baseline"):
 # 查找最新的结果文件
 results_dir = Path("results/baseline")
 if not results_dir.exists():
-    console.print("[red]错误：results/baseline目录不存在[/red]")
+ console.print("[red]错误：results/baseline目录不存在[/red]")
 ```
 
 **修改后**：
@@ -49,7 +49,7 @@ project_root = script_dir.parent
 results_dir = project_root / "results" / "baseline"
 
 if not results_dir.exists():
-    console.print(f"[red]错误：{results_dir}目录不存在[/red]")
+ console.print(f"[red]错误：{results_dir}目录不存在[/red]")
 ```
 
 ## 效果
@@ -86,5 +86,5 @@ python3 evaluate_baseline.py
 
 ---
 
-**修复时间**：2025-11-17  
+**修复时间**：2025-11-17 
 **修复人员**：Cascade AI Assistant

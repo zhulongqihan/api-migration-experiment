@@ -1,9 +1,9 @@
 # 环境配置记录
 
-## 📅 配置时间
+## 配置时间
 2025-11-17
 
-## 🖥️ 服务器信息
+## 服务器信息
 - **主机名**: 3090
 - **用户**: zhangchangyu
 - **GPU**: 2 × RTX 3090 Ti (24GB each)
@@ -11,7 +11,7 @@
 - **Python**: 3.10
 - **Conda环境**: apiupdate
 
-## ✅ 已安装的核心依赖
+## 已安装的核心依赖
 
 ### 深度学习框架
 ```
@@ -35,7 +35,7 @@ scipy==1.15.3
 rich==13.9.4
 ```
 
-## ⚠️ 已解决的兼容性问题
+## 已解决的兼容性问题
 
 ### 1. bitsandbytes与triton.ops冲突
 
@@ -54,9 +54,9 @@ ModuleNotFoundError: No module named 'triton.ops'
 - 我们不需要量化功能（显存充足）
 
 **影响**：
-- ✅ 无负面影响
-- ✅ LoRA训练正常工作
-- ❌ 无法使用8bit/4bit量化（但我们不需要）
+- 无负面影响
+- LoRA训练正常工作
+- 无法使用8bit/4bit量化（但我们不需要）
 
 ### 2. pandas与numpy版本不兼容
 
@@ -81,7 +81,7 @@ pip install --only-binary=:all: pyarrow pandas datasets
 - pyarrow==20.0.0
 - datasets==4.0.0
 
-## 🔧 环境变量设置
+## 环境变量设置
 
 在所有LoRA相关脚本中添加：
 ```python
@@ -94,7 +94,7 @@ os.environ['DISABLE_BNB_IMPORT'] = '1'
 export DISABLE_BNB_IMPORT=1
 ```
 
-## ✅ 验证结果
+## 验证结果
 
 ### 训练器初始化测试
 ```bash
@@ -103,17 +103,17 @@ python3 lora_trainer.py
 
 **输出**：
 ```
-✓ 模型加载成功 (cuda)
-✓ LoRA配置完成
-  可训练参数: 9,232,384 (0.59%)
-  总参数: 1,552,946,688
-✓ 数据集准备完成: 3 个样例
-✓ 训练器初始化成功
+ 模型加载成功 (cuda)
+ LoRA配置完成
+ 可训练参数: 9,232,384 (0.59%)
+ 总参数: 1,552,946,688
+ 数据集准备完成: 3 个样例
+ 训练器初始化成功
 ```
 
 ### PEFT功能测试
 ```bash
-python3 -c "import peft; from peft import LoraConfig, TaskType; print('✅ PEFT正常')"
+python3 -c "import peft; from peft import LoraConfig, TaskType; print(' PEFT正常')"
 ```
 
 ### GPU可用性测试
@@ -121,7 +121,7 @@ python3 -c "import peft; from peft import LoraConfig, TaskType; print('✅ PEFT�
 python3 -c "import torch; print(f'CUDA可用: {torch.cuda.is_available()}, 设备数: {torch.cuda.device_count()}')"
 ```
 
-## 📝 完整安装命令（参考）
+## 完整安装命令（参考）
 
 如果需要在新环境中重新配置：
 
@@ -143,17 +143,17 @@ pip install --only-binary=:all: pandas pyarrow datasets scipy
 pip install rich
 
 # 验证安装
-python3 -c "import torch, transformers, peft; print('✅ 环境配置成功')"
+python3 -c "import torch, transformers, peft; print(' 环境配置成功')"
 ```
 
-## 🚀 下一步
+## 下一步
 
 环境配置完成后：
 1. 测试训练器：`python3 lora_trainer.py`
 2. 快速测试训练：`python3 run_lora.py --method hierarchical --epochs 1 --batch_size 2`
 3. 完整训练实验
 
-## 📞 问题排查
+## 问题排查
 
 ### 如果遇到导入错误
 ```bash
@@ -187,5 +187,5 @@ python3 run_lora.py --method hierarchical --device cpu
 
 ---
 
-**最后更新**: 2025-11-17  
-**状态**: ✅ 环境配置完成，可以开始训练
+**最后更新**: 2025-11-17 
+**状态**: 环境配置完成，可以开始训练
